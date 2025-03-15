@@ -8,6 +8,8 @@ class PopupManager {
         this.warningsContainer = document.getElementById('warningsContainer');
         this.reportBtn = document.getElementById('reportBtn');
         this.settingsBtn = document.getElementById('settingsBtn');
+        this.blockBtn = document.getElementById('blockBtn');
+        this.trustBtn = document.getElementById('trustBtn');
 
         this.initializeEventListeners();
         this.updateStatus();
@@ -17,6 +19,8 @@ class PopupManager {
     initializeEventListeners() {
         this.reportBtn.addEventListener('click', () => this.reportWebsite());
         this.settingsBtn.addEventListener('click', () => this.openSettings());
+        this.blockBtn.addEventListener('click', () => this.blockSite());
+        this.trustBtn.addEventListener('click', () => this.trustSite());
 
         // Listen for messages from background script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -184,6 +188,58 @@ class PopupManager {
                 }]
             }
         });
+    }
+
+    async blockSite() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // Add visual feedback for button click
+            this.blockBtn.classList.add('clicked');
+            setTimeout(() => this.blockBtn.classList.remove('clicked'), 300);
+            
+            // Send message to content script to block the site
+            chrome.tabs.sendMessage(tab.id, { action: "blockSite" });
+            
+            // Add to blocked sites list in storage
+            chrome.storage.local.get(['blockedSites'], (result) => {
+                const blockedSites = result.blockedSites || [];
+                if (!blockedSites.includes(tab.url)) {
+                    blockedSites.push(tab.url);
+                    chrome.storage.local.set({ blockedSites });
+                }
+            });
+            
+            console.log('Site blocked:', tab.url);
+        } catch (error) {
+            console.error('Error blocking site:', error);
+        }
+    }
+    
+    async trustSite() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // Add visual feedback for button click
+            this.trustBtn.classList.add('clicked');
+            setTimeout(() => this.trustBtn.classList.remove('clicked'), 300);
+            
+            // Add to trusted sites list in storage
+            chrome.storage.local.get(['trustedSites'], (result) => {
+                const trustedSites = result.trustedSites || [];
+                if (!trustedSites.includes(tab.url)) {
+                    trustedSites.push(tab.url);
+                    chrome.storage.local.set({ trustedSites });
+                }
+            });
+            
+            // Update UI to show trusted status
+            this.updateOverallStatus('success', 'Trusted Site');
+            
+            console.log('Site trusted:', tab.url);
+        } catch (error) {
+            console.error('Error trusting site:', error);
+        }
     }
 }
 
