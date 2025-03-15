@@ -7,10 +7,18 @@ class SecureNetAI {
     }
 
     async initializeModels() {
-        // Load lightweight ML models for local analysis
-        this.urlEncoder = await tf.loadLayersModel('models/url_encoder.json');
-        this.visualModel = await tf.loadLayersModel('models/visual_analyzer.json');
-        this.behaviorModel = await tf.loadLayersModel('models/behavior_detector.json');
+        try {
+            // Load lightweight ML models for local analysis
+            this.urlEncoder = await tf.loadLayersModel('models/url_encoder/model.json');
+            this.visualModel = await tf.loadLayersModel('models/visual_analyzer/model.json');
+            this.behaviorModel = await tf.loadLayersModel('models/behavior_detector/model.json');
+            console.log('Models loaded successfully');
+        } catch (error) {
+            console.warn('Error loading models:', error);
+            console.log('Using fallback analysis methods');
+            // Create dummy models or use alternative methods
+            this.useBackendOnly = true;
+        }
     }
 
     setupListeners() {
@@ -41,13 +49,31 @@ class SecureNetAI {
             return this.cache.get(url);
         }
 
-        const analysis = {
-            urlRisk: await this.performURLAnalysis(url),
-            visualRisk: 0,
-            behaviorRisk: 0,
-            warnings: [],
-            timestamp: Date.now()
-        };
+        let analysis;
+        
+        if (this.useBackendOnly) {
+            // If models failed to load, use backend API only
+            analysis = await this.fetchAnalysisFromBackend(url);
+        } else {
+            // Use local models first, then enhance with backend API
+            analysis = {
+                urlRisk: await this.performURLAnalysis(url),
+                visualRisk: 0,
+                behaviorRisk: 0,
+                warnings: [],
+                timestamp: Date.now()
+            };
+            
+            // Enhance with backend data when available
+            try {
+                const backendAnalysis = await this.fetchAnalysisFromBackend(url);
+                if (backendAnalysis) {
+                    analysis = { ...analysis, ...backendAnalysis };
+                }
+            } catch (error) {
+                console.warn('Error fetching backend analysis:', error);
+            }
+        }
 
         this.cache.set(url, analysis);
         return analysis;
@@ -140,6 +166,34 @@ class SecureNetAI {
 
     async updateFederatedModel(report) {
         // Implementation for federated learning update
+    }
+
+    async fetchAnalysisFromBackend(url) {
+        try {
+            const response = await fetch('http://localhost:5000/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ url })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Backend API error: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.warn('Backend API unavailable:', error);
+            // Return a default analysis with low risk when backend is unavailable
+            return {
+                urlRisk: 0.1,
+                visualRisk: 0.1,
+                behaviorRisk: 0.1,
+                overall_risk: 0.1,
+                warnings: ['Backend API unavailable, using limited analysis']
+            };
+        }
     }
 }
 

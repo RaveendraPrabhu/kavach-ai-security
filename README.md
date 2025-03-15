@@ -47,7 +47,13 @@ Kavach AI Security is an advanced browser extension that uses artificial intelli
    ```
    Edit the `.env` file and add your OpenAI API key.
 
-5. Start the backend server:
+5. Generate the required model files:
+   ```
+   python scripts/generate_models.py
+   ```
+   This will create the necessary model files for both the backend and extension.
+
+6. Start the backend server:
    ```
    python backend/app.py
    ```
@@ -210,6 +216,46 @@ Run the frontend tests with:
 ```
 npm test
 ```
+
+## Troubleshooting
+
+If you encounter any issues during setup or running the project, here are some common solutions:
+
+### Model Loading Issues
+
+If you encounter errors related to model loading:
+```
+python scripts/generate_models.py
+```
+This will regenerate all the necessary model files.
+
+### OpenAI API Key Issues
+
+If you encounter errors related to the OpenAI API:
+1. Make sure you've added your API key to the `.env` file
+2. Check that your API key is valid and has sufficient credits
+3. If you don't have an OpenAI API key, you can get one at https://platform.openai.com/api-keys
+
+### Backend Connection Issues
+
+If the extension can't connect to the backend:
+1. Make sure the backend server is running on http://localhost:5000
+2. Check that your firewall isn't blocking the connection
+3. Verify that the host and port in the `.env` file match your setup
+
+### Python Package Installation Issues
+
+If you encounter errors installing Python packages:
+1. Make sure you're using Python 3.10 or higher
+2. Try installing packages one by one to identify problematic dependencies
+3. For TensorFlow issues, refer to the official installation guide: https://www.tensorflow.org/install
+
+### Node.js Package Installation Issues
+
+If you encounter errors installing Node.js packages:
+1. Make sure you're using Node.js 14 or higher
+2. Try clearing the npm cache: `npm cache clean --force`
+3. Delete the node_modules directory and run `npm install` again
 
 ## Contributing
 

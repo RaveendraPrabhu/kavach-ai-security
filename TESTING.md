@@ -27,7 +27,13 @@ This document provides instructions for testing the Kavach AI Security extension
    - Copy `.env.example` to `.env`
    - Add your OpenAI API key to the `.env` file
 
-5. Start the backend server:
+5. Generate the required model files:
+   ```
+   python scripts/generate_models.py
+   ```
+   This will create the necessary model files for both the backend and extension.
+
+6. Start the backend server:
    ```
    python backend/app.py
    ```
@@ -87,5 +93,9 @@ If you encounter any issues during testing:
 2. Ensure the OpenAI API key is correctly set in the `.env` file
 3. Verify that all dependencies are installed correctly
 4. Check the browser console for any JavaScript errors
+5. If models fail to load, regenerate them using:
+   ```
+   python scripts/generate_models.py
+   ```
 
 For any questions or assistance, please contact [Your Contact Information]. 
