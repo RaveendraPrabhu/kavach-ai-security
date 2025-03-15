@@ -17,7 +17,8 @@ module.exports = (env, argv) => {
     entry: {
       popup: './src/popup/popup.js',
       background: './src/background/background.js',
-      content: './src/content/content.js'
+      content: './src/content/content.js',
+      tf: './src/popup/tf.js'
     },
     output: {
       path: path.resolve(__dirname, 'dist'),
@@ -53,15 +54,12 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({
         template: './src/popup/popup.html',
         filename: 'popup/popup.html',
-        chunks: ['popup']
+        chunks: ['popup', 'tf']
       }),
       new CopyPlugin({
         patterns: [
           { from: 'manifest.json', to: '' },
-          { from: 'assets', to: 'assets' },
-          // Copy models if they exist
-          ...(fs.existsSync(path.resolve(__dirname, 'dist', 'models')) ? 
-            [{ from: 'dist/models', to: 'models' }] : [])
+          { from: 'assets', to: 'assets' }
         ]
       }),
       ...(isProduction ? [
