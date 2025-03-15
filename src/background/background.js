@@ -2,8 +2,21 @@ class SecureNetAI {
     constructor() {
         this.cache = new Map();
         this.ML_ENDPOINT = 'https://api.securenet.ai/analyze';
+        this.blockedSites = [];
+        this.trustedSites = [];
+        this.loadStoredSites();
         this.setupListeners();
         this.initializeModels();
+    }
+
+    async loadStoredSites() {
+        // Load blocked and trusted sites from storage
+        chrome.storage.sync.get(['blockedSites', 'trustedSites'], (result) => {
+            this.blockedSites = result.blockedSites || [];
+            this.trustedSites = result.trustedSites || [];
+            console.log('Loaded blocked sites:', this.blockedSites.length);
+            console.log('Loaded trusted sites:', this.trustedSites.length);
+        });
     }
 
     async initializeModels() {
@@ -35,9 +48,35 @@ class SecureNetAI {
             { urls: ["<all_urls>"] },
             ["blocking"]
         );
+        
+        // Listen for tab updates to check for blocked sites
+        chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+            if (changeInfo.status === 'complete' && tab.url) {
+                this.checkIfSiteBlocked(tabId, tab.url);
+            }
+        });
+    }
+    
+    checkIfSiteBlocked(tabId, url) {
+        // Check if the URL is in the blocked sites list
+        if (this.blockedSites.includes(url)) {
+            // Send a message to the content script to block the site
+            chrome.tabs.sendMessage(tabId, { action: "blockSite" });
+        }
     }
 
     async preemptiveAnalysis(details) {
+        // Skip analysis for trusted sites
+        if (this.trustedSites.includes(details.url)) {
+            return;
+        }
+        
+        // Block immediately if site is in blocked list
+        if (this.blockedSites.includes(details.url)) {
+            this.showBlockPage(details.tabId, { riskScore: 100 });
+            return;
+        }
+        
         const analysis = await this.analyzeURL(details.url);
         if (analysis.riskScore > 85) {
             this.showBlockPage(details.tabId, analysis);
@@ -47,6 +86,16 @@ class SecureNetAI {
     async analyzeURL(url) {
         if (this.cache.has(url)) {
             return this.cache.get(url);
+        }
+        
+        // Skip analysis for trusted sites
+        if (this.trustedSites.includes(url)) {
+            return { riskScore: 0, isSafe: true };
+        }
+        
+        // Return high risk for blocked sites
+        if (this.blockedSites.includes(url)) {
+            return { riskScore: 100, isSafe: false };
         }
 
         let analysis;
@@ -118,10 +167,56 @@ class SecureNetAI {
                     this.updateCacheWithBackendResults(message.data);
                 }
                 break;
+            case 'updateBlockedSites':
+                // Update blocked sites list
+                this.updateBlockedSites(message.url, message.action);
+                break;
+            case 'updateTrustedSites':
+                // Update trusted sites list
+                this.updateTrustedSites(message.url, message.action);
+                break;
             default:
                 console.warn('Unknown message type:', message.type);
         }
         return true; // Keep the message channel open for async responses
+    }
+    
+    updateBlockedSites(url, action) {
+        if (action === 'add') {
+            // Add URL to blocked sites if not already present
+            if (!this.blockedSites.includes(url)) {
+                this.blockedSites.push(url);
+                chrome.storage.sync.set({ blockedSites: this.blockedSites });
+                console.log('Added to blocked sites:', url);
+                
+                // Remove from trusted sites if present
+                this.updateTrustedSites(url, 'remove');
+            }
+        } else if (action === 'remove') {
+            // Remove URL from blocked sites
+            this.blockedSites = this.blockedSites.filter(site => site !== url);
+            chrome.storage.sync.set({ blockedSites: this.blockedSites });
+            console.log('Removed from blocked sites:', url);
+        }
+    }
+    
+    updateTrustedSites(url, action) {
+        if (action === 'add') {
+            // Add URL to trusted sites if not already present
+            if (!this.trustedSites.includes(url)) {
+                this.trustedSites.push(url);
+                chrome.storage.sync.set({ trustedSites: this.trustedSites });
+                console.log('Added to trusted sites:', url);
+                
+                // Remove from blocked sites if present
+                this.updateBlockedSites(url, 'remove');
+            }
+        } else if (action === 'remove') {
+            // Remove URL from trusted sites
+            this.trustedSites = this.trustedSites.filter(site => site !== url);
+            chrome.storage.sync.set({ trustedSites: this.trustedSites });
+            console.log('Removed from trusted sites:', url);
+        }
     }
 
     async analyzePageContent(pageData, tabId) {
@@ -129,6 +224,19 @@ class SecureNetAI {
             // Extract content for analysis
             const url = pageData.url;
             const content = pageData.content;
+            
+            // Skip analysis for trusted sites
+            if (this.trustedSites.includes(url)) {
+                this.updateBadge(tabId, 0);
+                return;
+            }
+            
+            // Block immediately if site is in blocked list
+            if (this.blockedSites.includes(url)) {
+                chrome.tabs.sendMessage(tabId, { action: "blockSite" });
+                this.updateBadge(tabId, 1);
+                return;
+            }
             
             // Perform basic analysis
             const analysis = await this.getFullAnalysis(url);

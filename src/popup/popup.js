@@ -72,10 +72,16 @@ class PopupManager {
         }
     }
 
-    updateOverallStatus(risk) {
+    updateOverallStatus(risk, statusText) {
         this.statusCircle.className = 'status-circle';
         
-        if (risk < 30) {
+        if (statusText) {
+            // If a specific status text is provided, use it
+            this.statusText.textContent = statusText;
+            if (statusText === 'Trusted Site') {
+                this.statusCircle.classList.add('safe');
+            }
+        } else if (risk < 30) {
             this.statusCircle.classList.add('safe');
             this.statusText.textContent = 'Website is safe';
         } else if (risk < 70) {
@@ -198,19 +204,29 @@ class PopupManager {
             this.blockBtn.classList.add('clicked');
             setTimeout(() => this.blockBtn.classList.remove('clicked'), 300);
             
-            // Send message to content script to block the site
-            chrome.tabs.sendMessage(tab.id, { action: "blockSite" });
-            
-            // Add to blocked sites list in storage
-            chrome.storage.local.get(['blockedSites'], (result) => {
+            // Store the blocked URL in chrome.storage.sync for persistence across all tabs
+            chrome.storage.sync.get(['blockedSites'], (result) => {
                 const blockedSites = result.blockedSites || [];
                 if (!blockedSites.includes(tab.url)) {
                     blockedSites.push(tab.url);
-                    chrome.storage.local.set({ blockedSites });
+                    chrome.storage.sync.set({ blockedSites });
                 }
             });
             
+            // Send message to content script to block the site
+            chrome.tabs.sendMessage(tab.id, { action: "blockSite" });
+            
+            // Update background script to check for blocked sites
+            chrome.runtime.sendMessage({
+                type: 'updateBlockedSites',
+                url: tab.url,
+                action: 'add'
+            });
+            
             console.log('Site blocked:', tab.url);
+            
+            // Close the popup after action
+            setTimeout(() => window.close(), 500);
         } catch (error) {
             console.error('Error blocking site:', error);
         }
@@ -224,19 +240,47 @@ class PopupManager {
             this.trustBtn.classList.add('clicked');
             setTimeout(() => this.trustBtn.classList.remove('clicked'), 300);
             
-            // Add to trusted sites list in storage
-            chrome.storage.local.get(['trustedSites'], (result) => {
+            // Store the trusted URL in chrome.storage.sync for persistence across all tabs
+            chrome.storage.sync.get(['trustedSites', 'blockedSites'], (result) => {
+                // Add to trusted sites
                 const trustedSites = result.trustedSites || [];
                 if (!trustedSites.includes(tab.url)) {
                     trustedSites.push(tab.url);
-                    chrome.storage.local.set({ trustedSites });
+                    chrome.storage.sync.set({ trustedSites });
+                }
+                
+                // Remove from blocked sites if it was previously blocked
+                const blockedSites = result.blockedSites || [];
+                const updatedBlockedSites = blockedSites.filter(url => url !== tab.url);
+                if (blockedSites.length !== updatedBlockedSites.length) {
+                    chrome.storage.sync.set({ blockedSites: updatedBlockedSites });
                 }
             });
             
+            // Send message to content script to trust the site
+            chrome.tabs.sendMessage(tab.id, { action: "trustSite" });
+            
+            // Update background script
+            chrome.runtime.sendMessage({
+                type: 'updateTrustedSites',
+                url: tab.url,
+                action: 'add'
+            });
+            
             // Update UI to show trusted status
-            this.updateOverallStatus('success', 'Trusted Site');
+            this.updateOverallStatus(0, 'Trusted Site');
             
             console.log('Site trusted:', tab.url);
+            
+            // Update the status badge
+            const statusBadge = document.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.textContent = 'Trusted Site';
+                statusBadge.style.background = 'linear-gradient(90deg, #00c853, #69f0ae)';
+            }
+            
+            // Don't close the popup immediately to show the trusted status
+            setTimeout(() => window.close(), 1500);
         } catch (error) {
             console.error('Error trusting site:', error);
         }
@@ -247,9 +291,10 @@ class PopupManager {
 document.addEventListener('DOMContentLoaded', function() {
     // Get DOM elements
     const detailItems = document.querySelectorAll('.detail-item');
-    const blockBtn = document.getElementById('blockBtn');
-    const trustBtn = document.getElementById('trustBtn');
     const statusBadge = document.querySelector('.status-badge');
+    
+    // Initialize the PopupManager
+    const popupManager = new PopupManager();
     
     // Add staggered animation to detail items
     detailItems.forEach((item, index) => {
@@ -267,67 +312,64 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentUrl = tabs[0].url;
         const hostname = new URL(currentUrl).hostname;
         
-        // Update status badge with current site
-        statusBadge.textContent = `Analyzing ${hostname}...`;
-        
-        // Connect to Flask backend
-        fetch('http://localhost:5000/api/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                url: currentUrl,
-                timestamp: Date.now()
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update UI with analysis results
-            updateAnalysisResults(data);
-            statusBadge.textContent = getStatusText(data);
-            statusBadge.classList.remove('status-scanning');
+        // Check if the site is already blocked or trusted
+        chrome.storage.sync.get(['blockedSites', 'trustedSites'], (result) => {
+            const blockedSites = result.blockedSites || [];
+            const trustedSites = result.trustedSites || [];
             
-            if (isHighRisk(data)) {
+            if (blockedSites.includes(currentUrl)) {
+                statusBadge.textContent = 'Blocked Site';
                 statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
-            } else if (isMediumRisk(data)) {
-                statusBadge.style.background = 'linear-gradient(90deg, #ffc107, #ffecb3)';
-                statusBadge.style.color = '#5d4037';
-            } else {
-                statusBadge.style.background = 'linear-gradient(90deg, #00c853, #69f0ae)';
+                statusBadge.classList.remove('status-scanning');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error analyzing website:', error);
-            statusBadge.textContent = 'Analysis Failed';
-            statusBadge.classList.remove('status-scanning');
-            statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
             
-            // Show error in detail items
-            updateDetailStatuses('error');
-        });
-    });
-
-    // Handle block/trust actions
-    blockBtn.addEventListener('click', function() {
-        // Add click effect
-        this.classList.add('clicked');
-        setTimeout(() => this.classList.remove('clicked'), 300);
-        
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "blockSite"});
-            window.close(); // Close popup after action
-        });
-    });
-
-    trustBtn.addEventListener('click', function() {
-        // Add click effect
-        this.classList.add('clicked');
-        setTimeout(() => this.classList.remove('clicked'), 300);
-        
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "trustSite"});
-            window.close(); // Close popup after action
+            if (trustedSites.includes(currentUrl)) {
+                statusBadge.textContent = 'Trusted Site';
+                statusBadge.style.background = 'linear-gradient(90deg, #00c853, #69f0ae)';
+                statusBadge.classList.remove('status-scanning');
+                return;
+            }
+            
+            // Update status badge with current site
+            statusBadge.textContent = `Analyzing ${hostname}...`;
+            
+            // Connect to Flask backend
+            fetch('http://localhost:5000/api/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    url: currentUrl,
+                    timestamp: Date.now()
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update UI with analysis results
+                updateAnalysisResults(data);
+                statusBadge.textContent = getStatusText(data);
+                statusBadge.classList.remove('status-scanning');
+                
+                if (isHighRisk(data)) {
+                    statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
+                } else if (isMediumRisk(data)) {
+                    statusBadge.style.background = 'linear-gradient(90deg, #ffc107, #ffecb3)';
+                    statusBadge.style.color = '#5d4037';
+                } else {
+                    statusBadge.style.background = 'linear-gradient(90deg, #00c853, #69f0ae)';
+                }
+            })
+            .catch(error => {
+                console.error('Error analyzing website:', error);
+                statusBadge.textContent = 'Analysis Failed';
+                statusBadge.classList.remove('status-scanning');
+                statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
+                
+                // Show error in detail items
+                updateDetailStatuses('error');
+            });
         });
     });
     
