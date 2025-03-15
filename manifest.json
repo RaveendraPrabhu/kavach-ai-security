@@ -8,10 +8,13 @@
     "scripting",
     "storage",
     "webRequest",
-    "tabs"
+    "tabs",
+    "notifications",
+    "webNavigation"
   ],
   "host_permissions": [
-    "http://localhost:5000/*"
+    "http://localhost:5000/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -33,6 +36,12 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content/content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["models/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 } 

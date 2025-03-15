@@ -66,12 +66,28 @@ Kavach AI Security is an advanced browser extension that uses artificial intelli
    npm install
    ```
 
-2. Build the extension:
+2. Add TensorFlow.js to the extension:
+   ```
+   npm install @tensorflow/tfjs
+   ```
+
+3. Create a file named `src/popup/tf.js` with the following content:
+   ```javascript
+   import * as tf from '@tensorflow/tfjs';
+   window.tf = tf;
+   ```
+
+4. Update the `src/popup/popup.html` file to include TensorFlow.js:
+   ```html
+   <script src="../popup/tf.js"></script>
+   ```
+
+5. Build the extension:
    ```
    npm run build
    ```
 
-3. Load the extension in your browser:
+6. Load the extension in your browser:
    - Chrome: Go to `chrome://extensions/`, enable Developer mode, click "Load unpacked", and select the `dist` folder
    - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", and select any file in the `dist` folder
 

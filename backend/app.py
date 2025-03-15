@@ -72,7 +72,7 @@ class SecureNetAPI:
             
             # Load scikit-learn models
             try:
-                behavior_model_path = os.path.join('backend', 'models', 'saved_models', 'behavior_classifier.h5')
+                behavior_model_path = os.path.join('backend', 'models', 'saved_models', 'behavior_classifier.pkl')
                 with open(behavior_model_path, 'rb') as f:
                     self.behavior_model = pickle.load(f)
             except:

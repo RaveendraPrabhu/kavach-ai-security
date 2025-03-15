@@ -41,10 +41,25 @@ This document provides instructions for testing the Kavach AI Security extension
 
 ### 2. Extension Setup
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" using the toggle in the top-right corner
-3. Click "Load unpacked" and select the `dist` folder from the repository
-4. The Kavach AI Security extension should now be installed and visible in your extensions list
+1. Install the required npm packages:
+   ```
+   npm install
+   ```
+
+2. Add TensorFlow.js to the extension:
+   ```
+   npm install @tensorflow/tfjs
+   ```
+
+3. Build the extension:
+   ```
+   npm run build
+   ```
+
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable "Developer mode" using the toggle in the top-right corner
+6. Click "Load unpacked" and select the `dist` folder from the repository
+7. The Kavach AI Security extension should now be installed and visible in your extensions list
 
 ## Testing Scenarios
 
@@ -97,5 +112,22 @@ If you encounter any issues during testing:
    ```
    python scripts/generate_models.py
    ```
+6. If the extension doesn't load properly, try:
+   ```
+   npm run build
+   ```
+   Then reload the extension in Chrome
+
+7. If TensorFlow.js errors appear in the console, make sure you've installed it:
+   ```
+   npm install @tensorflow/tfjs
+   ```
+
+8. If the extension can't connect to the backend, check that:
+   - The backend server is running
+   - Your firewall isn't blocking the connection
+   - The host and port in the `.env` file match your setup
+
+9. For any other issues, check the browser console and backend logs for error messages
 
 For any questions or assistance, please contact [Your Contact Information]. 

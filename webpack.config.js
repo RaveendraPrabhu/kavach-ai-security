@@ -2,9 +2,16 @@ const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ZipPlugin = require('zip-webpack-plugin');
+const fs = require('fs');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  
+  // Create models directory if it doesn't exist
+  const modelsDir = path.resolve(__dirname, 'dist', 'models');
+  if (!fs.existsSync(modelsDir)) {
+    fs.mkdirSync(modelsDir, { recursive: true });
+  }
   
   return {
     entry: {
@@ -51,7 +58,10 @@ module.exports = (env, argv) => {
       new CopyPlugin({
         patterns: [
           { from: 'manifest.json', to: '' },
-          { from: 'assets', to: 'assets' }
+          { from: 'assets', to: 'assets' },
+          // Copy models if they exist
+          ...(fs.existsSync(path.resolve(__dirname, 'dist', 'models')) ? 
+            [{ from: 'dist/models', to: 'models' }] : [])
         ]
       }),
       ...(isProduction ? [

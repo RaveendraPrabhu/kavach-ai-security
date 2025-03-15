@@ -9,9 +9,9 @@ class SecureNetAI {
     async initializeModels() {
         try {
             // Load lightweight ML models for local analysis
-            this.urlEncoder = await tf.loadLayersModel('models/url_encoder/model.json');
-            this.visualModel = await tf.loadLayersModel('models/visual_analyzer/model.json');
-            this.behaviorModel = await tf.loadLayersModel('models/behavior_detector/model.json');
+            this.urlEncoder = await tf.loadLayersModel('chrome-extension://' + chrome.runtime.id + '/models/url_encoder/model.json');
+            this.visualModel = await tf.loadLayersModel('chrome-extension://' + chrome.runtime.id + '/models/visual_analyzer/model.json');
+            this.behaviorModel = await tf.loadLayersModel('chrome-extension://' + chrome.runtime.id + '/models/behavior_detector/model.json');
             console.log('Models loaded successfully');
         } catch (error) {
             console.warn('Error loading models:', error);
@@ -108,7 +108,95 @@ class SecureNetAI {
                 await this.reportPhishingSite(message.url);
                 sendResponse({ success: true });
                 break;
+            case 'analyzePageContent':
+                // Handle page content analysis from content script
+                this.analyzePageContent(message.data, sender.tab.id);
+                break;
+            case 'backendAnalysisResult':
+                // Update cache with backend analysis results
+                if (message.data && message.data.url) {
+                    this.updateCacheWithBackendResults(message.data);
+                }
+                break;
+            default:
+                console.warn('Unknown message type:', message.type);
         }
+        return true; // Keep the message channel open for async responses
+    }
+
+    async analyzePageContent(pageData, tabId) {
+        try {
+            // Extract content for analysis
+            const url = pageData.url;
+            const content = pageData.content;
+            
+            // Perform basic analysis
+            const analysis = await this.getFullAnalysis(url);
+            
+            // Check if site should be blocked
+            if (analysis.overall_risk > 0.8) {
+                chrome.tabs.sendMessage(tabId, { action: "blockSite" });
+                
+                // Show notification
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'assets/icon128.png',
+                    title: 'High Risk Website Detected',
+                    message: 'Kavach AI has blocked a potentially dangerous website.',
+                    priority: 2
+                });
+            }
+            
+            // Update badge with risk level
+            this.updateBadge(tabId, analysis.overall_risk);
+            
+        } catch (error) {
+            console.error('Error analyzing page content:', error);
+        }
+    }
+    
+    updateBadge(tabId, riskScore) {
+        // Convert risk score to color
+        let color = '#4CAF50'; // Green for low risk
+        if (riskScore > 0.7) {
+            color = '#F44336'; // Red for high risk
+        } else if (riskScore > 0.4) {
+            color = '#FFC107'; // Yellow for medium risk
+        }
+        
+        // Update badge
+        chrome.action.setBadgeBackgroundColor({ color: color, tabId: tabId });
+        chrome.action.setBadgeText({ 
+            text: Math.round(riskScore * 100).toString(), 
+            tabId: tabId 
+        });
+    }
+    
+    updateCacheWithBackendResults(backendData) {
+        if (!backendData.url) return;
+        
+        // Get existing analysis from cache or create new one
+        const url = backendData.url;
+        let analysis = this.cache.get(url) || {
+            urlRisk: 0,
+            visualRisk: 0,
+            behaviorRisk: 0,
+            warnings: [],
+            timestamp: Date.now()
+        };
+        
+        // Update with backend data
+        analysis = {
+            ...analysis,
+            urlRisk: backendData.url_risk || analysis.urlRisk,
+            visualRisk: backendData.visual_risk || analysis.visualRisk,
+            behaviorRisk: backendData.behavior_risk || analysis.behaviorRisk,
+            overall_risk: backendData.overall_risk || Math.max(analysis.urlRisk, analysis.visualRisk, analysis.behaviorRisk),
+            kavach_analysis: backendData.kavach_analysis || {}
+        };
+        
+        // Update cache
+        this.cache.set(url, analysis);
     }
 
     async getFullAnalysis(url) {
