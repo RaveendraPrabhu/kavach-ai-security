@@ -35,4 +35,8 @@ build/
 
 # OS specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Ignore any private keys
+*.pem
+*.key 
