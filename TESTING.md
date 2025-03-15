@@ -18,22 +18,29 @@ This document provides instructions for testing the Kavach AI Security extension
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
+   **IMPORTANT**: This project requires Python 3.10.x specifically. Other versions are not supported.
+
 3. Install the required Python packages:
    ```
    pip install -r requirements.txt
    ```
 
-4. Set up your environment variables:
+4. Install the tf-keras package (required for compatibility with Transformers):
+   ```
+   pip install tf-keras
+   ```
+
+5. Set up your environment variables:
    - Copy `.env.example` to `.env`
    - Add your OpenAI API key to the `.env` file
 
-5. Generate the required model files:
+6. Generate the required model files:
    ```
    python scripts/generate_models.py
    ```
    This will create the necessary model files for both the backend and extension.
 
-6. Start the backend server:
+7. Start the backend server:
    ```
    python backend/app.py
    ```
@@ -123,11 +130,16 @@ If you encounter any issues during testing:
    npm install @tensorflow/tfjs
    ```
 
-8. If the extension can't connect to the backend, check that:
+8. If you encounter errors with the Transformers library, install the tf-keras package:
+   ```
+   pip install tf-keras
+   ```
+
+9. If the extension can't connect to the backend, check that:
    - The backend server is running
    - Your firewall isn't blocking the connection
    - The host and port in the `.env` file match your setup
 
-9. For any other issues, check the browser console and backend logs for error messages
+10. Make sure you're using Python 3.10.x specifically, as other versions may cause compatibility issues with the libraries used in this project.
 
 For any questions or assistance, please contact [Your Contact Information]. 

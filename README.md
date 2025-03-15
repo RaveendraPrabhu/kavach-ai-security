@@ -18,7 +18,7 @@ Kavach AI Security is an advanced browser extension that uses artificial intelli
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- **Python 3.10** (specifically 3.10.x, other versions are not supported)
 - Node.js 14 or higher
 - npm 6 or higher
 
@@ -41,19 +41,24 @@ Kavach AI Security is an advanced browser extension that uses artificial intelli
    pip install -r requirements.txt
    ```
 
-4. Set up your environment variables:
+4. Install the tf-keras package (required for compatibility with Transformers):
+   ```
+   pip install tf-keras
+   ```
+
+5. Set up your environment variables:
    ```
    cp .env.example .env
    ```
    Edit the `.env` file and add your OpenAI API key.
 
-5. Generate the required model files:
+6. Generate the required model files:
    ```
    python scripts/generate_models.py
    ```
    This will create the necessary model files for both the backend and extension.
 
-6. Start the backend server:
+7. Start the backend server:
    ```
    python backend/app.py
    ```
@@ -179,6 +184,7 @@ Reports a phishing attempt or provides feedback.
 1. Make sure you have all the required dependencies installed:
    ```
    pip install -r requirements.txt
+   pip install tf-keras
    ```
 
 2. For development, you can run the backend server with debug mode:
