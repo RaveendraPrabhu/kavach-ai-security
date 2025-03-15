@@ -1,74 +1,479 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureNet</title>
-    <link rel="stylesheet" href="popup.css">
+    <title>Kavach AI Security Shield</title>
+    <style>
+        :root {
+            --primary-color: #1a237e;
+            --primary-gradient: linear-gradient(135deg, #1a237e, #3949ab);
+            --secondary-color: #7c4dff;
+            --accent-color: #00bcd4;
+            --success-color: #00c853;
+            --warning-color: #ffc107;
+            --danger-color: #f44336;
+            --text-light: #ffffff;
+            --text-dark: #212121;
+            --card-bg: #ffffff;
+            --card-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            --border-radius: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            width: 420px;
+            background: var(--primary-gradient);
+            color: var(--text-light);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background particles */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 8%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 6%),
+                radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 12%),
+                radial-gradient(circle at 70% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 10%);
+            z-index: -1;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            background: linear-gradient(135deg, #7c4dff, #448aff);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: skewX(-25deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        .logo img {
+            width: 35px;
+            height: 35px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .status {
+            font-size: 14px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+        }
+
+        .status::before {
+            content: "";
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px var(--success-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 15px var(--success-color); }
+            100% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .analysis-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 25px;
+            color: var(--text-dark);
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+            transition: all 0.3s ease;
+        }
+
+        .analysis-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        .card-title span {
+            margin-right: 10px;
+            font-size: 24px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .status-scanning {
+            background: linear-gradient(90deg, var(--secondary-color), #9575cd);
+            color: var(--text-light);
+            animation: pulse-badge 2s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: rgba(0,0,0,0.02);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .detail-item:hover {
+            background-color: rgba(0,0,0,0.04);
+            transform: translateX(5px);
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .detail-icon {
+            font-size: 22px;
+            margin-right: 15px;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(124, 77, 255, 0.1), rgba(68, 138, 255, 0.1));
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .detail-info {
+            flex: 1;
+        }
+
+        .detail-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .detail-value {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .detail-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .scanning {
+            background: linear-gradient(90deg, #e0e0e0, #f5f5f5);
+            color: #616161;
+            animation: scanning-pulse 1.5s infinite;
+        }
+
+        @keyframes scanning-pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        .success {
+            background: linear-gradient(90deg, var(--success-color), #69f0ae);
+            color: white;
+        }
+
+        .warning {
+            background: linear-gradient(90deg, var(--warning-color), #ffecb3);
+            color: #5d4037;
+        }
+
+        .danger {
+            background: linear-gradient(90deg, var(--danger-color), #ff8a80);
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: transform 0.5s, opacity 0.5s;
+        }
+
+        .btn:hover::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .btn span {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .btn-block {
+            background: linear-gradient(135deg, var(--danger-color), #ff5252);
+            color: white;
+        }
+
+        .btn-trust {
+            background: linear-gradient(135deg, var(--success-color), #00e676);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn.clicked {
+            animation: button-click 0.3s ease;
+        }
+        
+        @keyframes button-click {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+
+        /* Animation for scanning effect */
+        .analysis-card::after {
+            content: "";
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            animation: scanning 2s linear infinite;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        @keyframes scanning {
+            0% { top: -5%; }
+            100% { top: 105%; }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .analysis-card {
+                background-color: #2d2d2d;
+                color: #f5f5f5;
+            }
+            .card-title {
+                color: #e0e0e0;
+            }
+            .card-description, .detail-value {
+                color: #aaa;
+            }
+            .detail-item {
+                background-color: rgba(255,255,255,0.05);
+            }
+            .detail-item:hover {
+                background-color: rgba(255,255,255,0.08);
+            }
+            .detail-title {
+                color: #e0e0e0;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <img src="../../assets/icon48.png" alt="SecureNet Logo" class="logo">
-            <h1>SecureNet</h1>
+    <div class="header">
+        <div class="logo">
+            <img src="../../assets/icon48.png" alt="Shield">
         </div>
-        
-        <div class="status-container">
-            <div class="status-indicator">
-                <div class="status-circle" id="statusCircle"></div>
-                <span id="statusText">Analyzing...</span>
-            </div>
-        </div>
-
-        <div class="risk-details" id="riskDetails">
-            <h2>Security Analysis</h2>
-            <div class="risk-scores">
-                <div class="risk-item">
-                    <span>URL Risk:</span>
-                    <div class="progress-bar">
-                        <div class="progress" id="urlRisk"></div>
-                    </div>
-                </div>
-                <div class="risk-item">
-                    <span>Visual Risk:</span>
-                    <div class="progress-bar">
-                        <div class="progress" id="visualRisk"></div>
-                    </div>
-                </div>
-                <div class="risk-item">
-                    <span>Behavior Risk:</span>
-                    <div class="progress-bar">
-                        <div class="progress" id="behaviorRisk"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="warnings" id="warningsContainer">
-            <!-- Warnings will be dynamically added here -->
-        </div>
-
-        <div class="scan-visualization">
-            <canvas id="scanCanvas" width="300" height="150"></canvas>
-            <div class="scan-overlay">
-                <div class="scan-line"></div>
-            </div>
-        </div>
-
-        <div class="threat-visualization">
-            <canvas id="threatMap" width="300" height="100"></canvas>
-        </div>
-
-        <div class="ai-explanation">
-            <h3>AI Analysis Breakdown</h3>
-            <canvas id="aiExplanation" width="300" height="200"></canvas>
-        </div>
-
-        <div class="actions">
-            <button id="reportBtn" class="btn report">Report Website</button>
-            <button id="settingsBtn" class="btn settings">Settings</button>
+        <div>
+            <div class="title">Kavach Shield</div>
+            <div class="status">Protection Active</div>
         </div>
     </div>
+
+    <div class="analysis-card">
+        <div class="card-header">
+            <div class="card-title">
+                <span>🛡️</span>
+                Security Analysis
+            </div>
+            <div class="status-badge status-scanning">Scanning...</div>
+        </div>
+        <div class="card-description">
+            Real-time AI-powered security assessment of current website
+        </div>
+        <div class="details-list">
+            <div class="detail-item">
+                <div class="detail-icon">🔍</div>
+                <div class="detail-info">
+                    <div class="detail-title">URL Analysis</div>
+                    <div class="detail-value">Checking for malicious patterns and suspicious domains</div>
+                </div>
+                <div class="detail-status scanning">Scanning</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-icon">👁️</div>
+                <div class="detail-info">
+                    <div class="detail-title">Visual Check</div>
+                    <div class="detail-value">Analyzing page elements for brand impersonation</div>
+                </div>
+                <div class="detail-status success">Secure</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-icon">📊</div>
+                <div class="detail-info">
+                    <div class="detail-title">Behavior Analysis</div>
+                    <div class="detail-value">Monitoring site behavior for suspicious activities</div>
+                </div>
+                <div class="detail-status warning">Caution</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-icon">🔒</div>
+                <div class="detail-info">
+                    <div class="detail-title">SSL/TLS Check</div>
+                    <div class="detail-value">Verifying certificate validity and encryption</div>
+                </div>
+                <div class="detail-status success">Valid</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-block" id="blockBtn">
+            <span>🚫</span> Block Site
+        </button>
+        <button class="btn btn-trust" id="trustBtn">
+            <span>✓</span> Trust Site
+        </button>
+    </div>
+
     <script src="popup.js"></script>
 </body>
 </html> 

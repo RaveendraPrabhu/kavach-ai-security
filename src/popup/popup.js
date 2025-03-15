@@ -188,6 +188,185 @@ class PopupManager {
 }
 
 // Initialize popup
-document.addEventListener('DOMContentLoaded', () => {
-    new PopupManager();
+document.addEventListener('DOMContentLoaded', function() {
+    // Get DOM elements
+    const detailItems = document.querySelectorAll('.detail-item');
+    const blockBtn = document.getElementById('blockBtn');
+    const trustBtn = document.getElementById('trustBtn');
+    const statusBadge = document.querySelector('.status-badge');
+    
+    // Add staggered animation to detail items
+    detailItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            item.style.transition = 'all 0.3s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateX(0)';
+        }, 100 * (index + 1));
+    });
+
+    // Get current tab URL and analyze
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        const currentUrl = tabs[0].url;
+        const hostname = new URL(currentUrl).hostname;
+        
+        // Update status badge with current site
+        statusBadge.textContent = `Analyzing ${hostname}...`;
+        
+        // Connect to Flask backend
+        fetch('http://localhost:5000/api/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                url: currentUrl,
+                timestamp: Date.now()
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update UI with analysis results
+            updateAnalysisResults(data);
+            statusBadge.textContent = getStatusText(data);
+            statusBadge.classList.remove('status-scanning');
+            
+            if (isHighRisk(data)) {
+                statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
+            } else if (isMediumRisk(data)) {
+                statusBadge.style.background = 'linear-gradient(90deg, #ffc107, #ffecb3)';
+                statusBadge.style.color = '#5d4037';
+            } else {
+                statusBadge.style.background = 'linear-gradient(90deg, #00c853, #69f0ae)';
+            }
+        })
+        .catch(error => {
+            console.error('Error analyzing website:', error);
+            statusBadge.textContent = 'Analysis Failed';
+            statusBadge.classList.remove('status-scanning');
+            statusBadge.style.background = 'linear-gradient(90deg, #f44336, #ff5252)';
+            
+            // Show error in detail items
+            updateDetailStatuses('error');
+        });
+    });
+
+    // Handle block/trust actions
+    blockBtn.addEventListener('click', function() {
+        // Add click effect
+        this.classList.add('clicked');
+        setTimeout(() => this.classList.remove('clicked'), 300);
+        
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: "blockSite"});
+            window.close(); // Close popup after action
+        });
+    });
+
+    trustBtn.addEventListener('click', function() {
+        // Add click effect
+        this.classList.add('clicked');
+        setTimeout(() => this.classList.remove('clicked'), 300);
+        
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: "trustSite"});
+            window.close(); // Close popup after action
+        });
+    });
+    
+    // Helper functions
+    function updateAnalysisResults(data) {
+        try {
+            // Get risk scores from data
+            const urlRisk = data.advanced_analysis?.kavach_ai?.phishing_risk?.url_risk_score || 0.1;
+            const visualRisk = data.advanced_analysis?.visual_safety?.risk_score || 0.1;
+            const behaviorRisk = data.advanced_analysis?.kavach_ai?.phishing_risk?.behavior_risk || 0.3;
+            const sslRisk = data.advanced_analysis?.ssl_check?.risk_score || 0.1;
+            
+            // Update detail statuses
+            updateDetailStatus('URL Analysis', urlRisk);
+            updateDetailStatus('Visual Check', visualRisk);
+            updateDetailStatus('Behavior Analysis', behaviorRisk);
+            updateDetailStatus('SSL/TLS Check', sslRisk);
+        } catch (error) {
+            console.error('Error updating analysis results:', error);
+        }
+    }
+    
+    function updateDetailStatus(title, riskScore) {
+        const detailItems = document.querySelectorAll('.detail-item');
+        
+        for (const item of detailItems) {
+            const itemTitle = item.querySelector('.detail-title').textContent;
+            if (itemTitle === title) {
+                const statusElement = item.querySelector('.detail-status');
+                
+                // Remove all existing classes except 'detail-status'
+                statusElement.className = 'detail-status';
+                
+                // Add appropriate class based on risk score
+                if (riskScore < 0.3) {
+                    statusElement.classList.add('success');
+                    statusElement.textContent = 'Safe';
+                } else if (riskScore < 0.7) {
+                    statusElement.classList.add('warning');
+                    statusElement.textContent = 'Caution';
+                } else {
+                    statusElement.classList.add('danger');
+                    statusElement.textContent = 'Risk';
+                }
+                
+                break;
+            }
+        }
+    }
+    
+    function updateDetailStatuses(status) {
+        const statusElements = document.querySelectorAll('.detail-status');
+        
+        statusElements.forEach(element => {
+            // Remove all existing classes except 'detail-status'
+            element.className = 'detail-status';
+            
+            if (status === 'error') {
+                element.classList.add('danger');
+                element.textContent = 'Error';
+            }
+        });
+    }
+    
+    function getStatusText(data) {
+        try {
+            const overallRisk = data.advanced_analysis?.kavach_ai?.phishing_risk?.overall_risk || 0;
+            
+            if (overallRisk > 0.7) {
+                return 'High Risk';
+            } else if (overallRisk > 0.4) {
+                return 'Exercise Caution';
+            } else {
+                return 'Safe';
+            }
+        } catch (error) {
+            return 'Unknown';
+        }
+    }
+    
+    function isHighRisk(data) {
+        try {
+            const overallRisk = data.advanced_analysis?.kavach_ai?.phishing_risk?.overall_risk || 0;
+            return overallRisk > 0.7;
+        } catch (error) {
+            return false;
+        }
+    }
+    
+    function isMediumRisk(data) {
+        try {
+            const overallRisk = data.advanced_analysis?.kavach_ai?.phishing_risk?.overall_risk || 0;
+            return overallRisk > 0.4 && overallRisk <= 0.7;
+        } catch (error) {
+            return false;
+        }
+    }
 }); 

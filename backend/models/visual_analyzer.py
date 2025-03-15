@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.applications.resnet50 import preprocess_input
+import keras
+from keras.applications import ResNet50
+from keras.applications.resnet50 import preprocess_input
 from sklearn.metrics.pairwise import cosine_similarity
 
 class VisualAnalyzer:

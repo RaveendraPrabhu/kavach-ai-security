@@ -1,18 +1,17 @@
-flask
-flask-cors
-numpy==1.24.3
-tensorflow==2.13.0
-scikit-learn
-spacy
-opencv-python
-cryptography
-uvicorn
-asgiref
-torch==2.0.1
-typing-extensions==4.5.0
-pydantic==2.5.2
-python-dotenv
-pandas==2.0.3
+flask==3.1.0
+flask-cors==5.0.1
+numpy>=1.26.0,<2.2.0
+tensorflow==2.19.0
+keras>=3.5.0
+scikit-learn==1.6.1
+spacy==3.8.4
+opencv-python==4.8.0.76
+cryptography==44.0.2
+python-dotenv==1.0.1
+uvicorn==0.34.0
+asgiref==3.8.1
+torch>=2.0.0
+transformers>=4.30.0
 
 # LangChain ecosystem
 langchain-core==0.1.17
@@ -27,4 +26,5 @@ textblob
 pytesseract
 Pillow
 imagehash
-tld 
+tld
+selenium>=4.0.0 
