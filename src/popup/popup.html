@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureNet</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="../../assets/icon48.png" alt="SecureNet Logo" class="logo">
+            <h1>SecureNet</h1>
+        </div>
+        
+        <div class="status-container">
+            <div class="status-indicator">
+                <div class="status-circle" id="statusCircle"></div>
+                <span id="statusText">Analyzing...</span>
+            </div>
+        </div>
+
+        <div class="risk-details" id="riskDetails">
+            <h2>Security Analysis</h2>
+            <div class="risk-scores">
+                <div class="risk-item">
+                    <span>URL Risk:</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="urlRisk"></div>
+                    </div>
+                </div>
+                <div class="risk-item">
+                    <span>Visual Risk:</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="visualRisk"></div>
+                    </div>
+                </div>
+                <div class="risk-item">
+                    <span>Behavior Risk:</span>
+                    <div class="progress-bar">
+                        <div class="progress" id="behaviorRisk"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="warnings" id="warningsContainer">
+            <!-- Warnings will be dynamically added here -->
+        </div>
+
+        <div class="scan-visualization">
+            <canvas id="scanCanvas" width="300" height="150"></canvas>
+            <div class="scan-overlay">
+                <div class="scan-line"></div>
+            </div>
+        </div>
+
+        <div class="threat-visualization">
+            <canvas id="threatMap" width="300" height="100"></canvas>
+        </div>
+
+        <div class="ai-explanation">
+            <h3>AI Analysis Breakdown</h3>
+            <canvas id="aiExplanation" width="300" height="200"></canvas>
+        </div>
+
+        <div class="actions">
+            <button id="reportBtn" class="btn report">Report Website</button>
+            <button id="settingsBtn" class="btn settings">Settings</button>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html> 
