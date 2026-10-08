@@ -1,298 +1,136 @@
 # Kavach AI Security
 
-Kavach AI Security is an advanced browser extension that uses artificial intelligence to detect and prevent phishing attacks in real-time. The name "Kavach" means "shield" or "armor" in Sanskrit, reflecting the extension's purpose of protecting users from online threats.
+## Overview
 
-## Features
+Kavach AI Security is an advanced browser extension that employs multi-layered AI analysis to detect and neutralize phishing attempts in real-time. Unlike traditional solutions that rely on outdated blacklists, Kavach uses cutting-edge AI techniques to identify suspicious websites based on their content, behavior, and visual elements.
 
-- **Real-time Phishing Detection**: Analyzes websites as you browse to identify potential phishing attempts
-- **Visual Analysis**: Uses computer vision to detect visual similarities with legitimate websites
-- **Behavioral Analysis**: Monitors page behavior for suspicious activities
-- **URL Analysis**: Examines URLs for patterns commonly associated with phishing
-- **Zero-Day Threat Detection**: Identifies previously unknown phishing techniques
-- **User-Friendly Alerts**: Clear notifications when potential threats are detected
-- **Detailed Risk Reports**: Comprehensive breakdown of detected security risks
-- **Age Verification**: Helps protect minors from inappropriate content
-- **Privacy-Focused**: All analysis happens locally or through secure API calls
+## Key Features
+
+- **Deep URL Analysis**: Identifies suspicious patterns, typosquatting, and URL manipulation techniques
+- **Visual Fingerprinting**: Compares website visual elements against legitimate sites to detect brand impersonation
+- **Behavioral Analysis**: Monitors for suspicious behaviors like unauthorized form submissions or keyloggers
+- **Contextual Trust Scoring**: Provides personalized risk assessments
+- **Real-time Protection**: Analyzes websites as you browse without slowing down your experience
+- **Detailed Reports**: Offers comprehensive security analysis with clear explanations of detected threats
+- **Whitelist Support**: Allows you to whitelist trusted sites that should not be analyzed
 
 ## Installation
 
-### Prerequisites
-
-- **Python 3.10** (specifically 3.10.x, other versions are not supported)
-- Node.js 14 or higher
-- npm 6 or higher
-
-### Backend Setup
+### Development Installation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/RaveendraPrabhu/kavach-ai-security.git
-   cd kavach-ai-security
+   git clone https://github.com/kavach-ai/kavach-extension.git
    ```
 
-2. Create and activate a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+2. **IMPORTANT**: Before loading the extension, remove any `__pycache__` directories as they can cause loading errors:
+   - Use the provided cleanup script: `.\cleanup_before_load.ps1` (PowerShell) or `cleanup_before_load.bat` (Command Prompt)
+   - Or manually remove all `__pycache__` directories from the project
 
-3. Install the required Python packages:
+3. Open Chrome or any Chromium-based browser (like Edge, Brave, etc.)
+
+4. Go to extension management:
+   - Chrome: `chrome://extensions/`
+   - Edge: `edge://extensions/`
+   - Brave: `brave://extensions/`
+
+5. Enable "Developer mode" (toggle in the top-right corner)
+
+6. Click "Load unpacked" and select the cloned repository folder
+
+7. The extension should now be installed and active
+
+### Troubleshooting Installation
+
+If you encounter the error "Cannot load extension with file or directory name __pycache__":
+1. Run the cleanup script mentioned above
+2. Make sure no `__pycache__` directories remain in the project folder
+3. Try loading the extension again
+
+### Running the Mock API Server
+
+For development and testing, a mock API server is included:
+
+1. Install Python requirements:
    ```
    pip install -r requirements.txt
    ```
 
-4. Install the tf-keras package (required for compatibility with Transformers):
+2. Start the mock API server:
    ```
-   pip install tf-keras
-   ```
-
-5. Set up your environment variables:
-   ```
-   cp .env.example .env
-   ```
-   Edit the `.env` file and add your OpenAI API key.
-
-6. Generate the required model files:
-   ```
-   python scripts/generate_models.py
-   ```
-   This will create the necessary model files for both the backend and extension.
-
-7. Start the backend server:
-   ```
-   python backend/app.py
-   ```
-   The server will run on http://localhost:5000
-
-### Extension Setup
-
-1. Install the required npm packages:
-   ```
-   npm install
+   python mock_api_server.py
    ```
 
-2. Add TensorFlow.js to the extension:
-   ```
-   npm install @tensorflow/tfjs
-   ```
-
-3. Create a file named `src/popup/tf.js` with the following content:
-   ```javascript
-   import * as tf from '@tensorflow/tfjs';
-   window.tf = tf;
-   ```
-
-4. Update the `src/popup/popup.html` file to include TensorFlow.js:
-   ```html
-   <script src="../popup/tf.js"></script>
-   ```
-
-5. Build the extension:
-   ```
-   npm run build
-   ```
-
-6. Load the extension in your browser:
-   - Chrome: Go to `chrome://extensions/`, enable Developer mode, click "Load unpacked", and select the `dist` folder
-   - Firefox: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", and select any file in the `dist` folder
+3. The server will run at `http://127.0.0.1:9000`
 
 ## Usage
 
-1. After installation, you'll see the Kavach AI icon in your browser toolbar.
-2. Click the icon to open the extension popup and see the security status of the current page.
-3. Browse the web normally - Kavach AI will automatically analyze pages as you visit them.
-4. If a potential phishing attempt is detected, you'll receive an alert with details about the threat.
-5. You can view detailed analysis by clicking "View Details" in the alert or popup.
-6. To report a false positive or negative, use the feedback option in the popup.
+### Basic Usage
 
-## API Documentation
+1. Browse the web as usual
+2. Kavach AI Security will automatically analyze each page you visit
+3. The extension icon will show the security status of the current site:
+   - Green: Safe
+   - Yellow: Suspicious (caution advised)
+   - Red: High risk (potential phishing)
 
-The backend API provides several endpoints for the extension to interact with:
+4. Click on the extension icon to see a detailed risk assessment
 
-### `/api/analyze` (POST)
+### Detailed Report
 
-Analyzes a URL and its content for security threats.
+For a comprehensive security analysis, click the "View Detailed Report" button in the popup to see:
 
-**Request Body:**
-```json
-{
-  "url": "https://example.com",
-  "screenshot": "base64_encoded_screenshot",
-  "behavior": {
-    "page_text": "Text content of the page",
-    "form_data": {},
-    "navigation": [],
-    "metadata": {}
-  }
-}
-```
+- Risk score and confidence level
+- Detailed security findings
+- Site information
+- Security features
+- Behavioral analysis
+- Visual similarity detection
 
-**Response:**
-```json
-{
-  "url_risk": 0.3,
-  "visual_risk": 0.2,
-  "behavior_risk": 0.1,
-  "ssl_status": true,
-  "overall_risk": 0.3,
-  "kavach_analysis": {
-    "zero_day_detection": {
-      "is_zero_day": false,
-      "risk_level": 0.1,
-      "details": "No zero-day threats detected"
-    },
-    "phishing_risk": {
-      "risk_level": 0.2,
-      "indicators": ["legitimate domain age", "valid SSL"]
-    },
-    "content_risk": 0.1,
-    "behavior_analysis": {
-      "form_risk": 0.1,
-      "navigation_risk": 0.1,
-      "suspicious_patterns": []
-    }
-  }
-}
-```
+### Options
 
-### `/api/report` (POST)
+Access the options page to:
 
-Reports a phishing attempt or provides feedback.
+- Enable/disable protection
+- Set warning notification levels
+- Configure automatic blocking of high-risk sites
+- Manage your whitelist of trusted sites
+- Control privacy settings
 
-**Request Body:**
-```json
-{
-  "url": "https://example.com",
-  "is_phishing": true,
-  "details": "This site attempted to steal login credentials",
-  "user_feedback": "The site mimics the legitimate bank website"
-}
-```
+## Technology Stack
 
-**Response:**
-```json
-{
-  "success": true,
-  "report_id": "12345"
-}
-```
+- **Frontend**: JavaScript, HTML/CSS with React for the extension interface
+- **Backend**: Python with Flask for the API server
+- **Machine Learning**: ONNX Runtime for efficient model inference, scikit-learn for traditional ML algorithms
+- **Computer Vision**: OpenCV and Pillow for image processing and analysis
+- **Security**: Enterprise-grade security with multiple protection layers
 
-## Development Setup
+## Benefits of ONNX Runtime
 
-### Backend Development
+Kavach AI Security uses ONNX Runtime for model inference instead of TensorFlow for several advantages:
 
-1. Make sure you have all the required dependencies installed:
-   ```
-   pip install -r requirements.txt
-   pip install tf-keras
-   ```
+1. **Lightweight Deployment**: ONNX Runtime has a much smaller footprint than TensorFlow, making the backend more efficient
+2. **Cross-Platform Compatibility**: ONNX models can be deployed across different environments without modification
+3. **Performance Optimization**: ONNX Runtime includes optimizations for faster inference on various hardware
+4. **Framework Agnostic**: Models trained in different frameworks (PyTorch, TensorFlow, etc.) can be converted to ONNX format
+5. **Reduced Dependencies**: Fewer dependencies mean easier deployment and maintenance
 
-2. For development, you can run the backend server with debug mode:
-   ```
-   python backend/app.py
-   ```
+## Development and Contribution
 
-3. To test the API endpoints:
-   ```
-   python test_api.py
-   ```
+Nithish Achar – nithishachar29@gmail.com
+LinkedIn:https://www.linkedin.com/in/nithish-acharya-aa7283290
 
-### Frontend Development
+Raveendra Prabhu -raveendra5656@gmail.com
 
-1. Install development dependencies:
-   ```
-   npm install
-   ```
-
-2. Start the development server:
-   ```
-   npm run dev
-   ```
-
-3. For testing:
-   ```
-   npm test
-   ```
-
-### Building for Production
-
-1. Build the extension:
-   ```
-   npm run build
-   ```
-
-2. The built extension will be in the `dist` folder, ready for distribution.
-
-## Testing
-
-### Backend Tests
-
-Run the backend tests with:
-```
-python -m pytest backend/tests/
-```
-
-### Frontend Tests
-
-Run the frontend tests with:
-```
-npm test
-```
-
-## Troubleshooting
-
-If you encounter any issues during setup or running the project, here are some common solutions:
-
-### Model Loading Issues
-
-If you encounter errors related to model loading:
-```
-python scripts/generate_models.py
-```
-This will regenerate all the necessary model files.
-
-### OpenAI API Key Issues
-
-If you encounter errors related to the OpenAI API:
-1. Make sure you've added your API key to the `.env` file
-2. Check that your API key is valid and has sufficient credits
-3. If you don't have an OpenAI API key, you can get one at https://platform.openai.com/api-keys
-
-### Backend Connection Issues
-
-If the extension can't connect to the backend:
-1. Make sure the backend server is running on http://localhost:5000
-2. Check that your firewall isn't blocking the connection
-3. Verify that the host and port in the `.env` file match your setup
-
-### Python Package Installation Issues
-
-If you encounter errors installing Python packages:
-1. Make sure you're using Python 3.10 or higher
-2. Try installing packages one by one to identify problematic dependencies
-3. For TensorFlow issues, refer to the official installation guide: https://www.tensorflow.org/install
-
-### Node.js Package Installation Issues
-
-If you encounter errors installing Node.js packages:
-1. Make sure you're using Node.js 14 or higher
-2. Try clearing the npm cache: `npm cache clean --force`
-3. Delete the node_modules directory and run `npm install` again
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## Contact
 
-- OpenAI for providing the AI capabilities
-- TensorFlow and scikit-learn for machine learning functionality
-- The open-source community for various libraries used in this project
+Swasthik N Rao – Nraoswasthik2004@gmail.com
+
+GitHub: github.com/swasthiknrao
+
+LinkedIn: linkedin.com/in/swasthik-n-rao
